@@ -19,7 +19,7 @@ export default function withAnimation(WrappedComponent, indeterminateProgress) {
       animated: PropTypes.bool,
       direction: PropTypes.oneOf(['clockwise', 'counter-clockwise']),
       indeterminate: PropTypes.bool,
-      progress: PropTypes.number.isRequired,
+      progress: PropTypes.instanceOf(Animated.Value),
     };
 
     static defaultProps = {
@@ -31,30 +31,20 @@ export default function withAnimation(WrappedComponent, indeterminateProgress) {
 
     constructor(props) {
       super(props);
-
-      this.progressValue = Math.min(Math.max(props.progress, 0), 1);
       this.rotationValue = 0;
       this.state = {
-        progress: new Animated.Value(this.progressValue),
         rotation: new Animated.Value(this.rotationValue),
       };
     }
 
     componentDidMount() {
-      this.state.progress.addListener((event) => { this.progressValue = event.value; });
       this.state.rotation.addListener((event) => { this.rotationValue = event.value; });
       if (this.props.indeterminate) {
         this.spin();
-        if (indeterminateProgress) {
-          Animated.spring(this.state.progress, {
-            toValue: indeterminateProgress,
-          }).start();
-        }
       }
     }
 
     componentWillUnmount() {
-      this.state.progress.removeAllListeners();
       this.state.rotation.removeAllListeners();
     }
 
@@ -70,20 +60,6 @@ export default function withAnimation(WrappedComponent, indeterminateProgress) {
               this.state.rotation.setValue(0);
             }
           });
-        }
-      }
-      const progress = (props.indeterminate
-        ? indeterminateProgress || 0
-        : Math.min(Math.max(props.progress, 0), 1)
-      );
-      if (progress !== this.progressValue) {
-        if (props.animated) {
-          Animated.spring(this.state.progress, {
-            toValue: progress,
-            bounciness: 0,
-          }).start();
-        } else {
-          this.state.progress.setValue(progress);
         }
       }
     }
@@ -107,7 +83,7 @@ export default function withAnimation(WrappedComponent, indeterminateProgress) {
       return (
         <WrappedComponent
           {...this.props}
-          progress={this.props.animated ? this.state.progress : this.props.progress}
+          progress={this.props.progress}
           rotation={this.state.rotation}
         />
       );
